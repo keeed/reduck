@@ -5,37 +5,52 @@ namespace Reduck
 {
     public abstract class Store
     {
-        private static Store StoreInstance;
+        protected Queue<State> _stateHistory = new Queue<State>();
+        protected State _previousState;
+        protected State _nextState;
 
-        public Store(List<IReducer> reducers, State state)
+        public Store(
+            List<IReducer> reducers, 
+            State initialState,
+            int stateHistoryLimit = 20)
         {
             Reducers = reducers ?? throw new ArgumentNullException(nameof(reducers));
-            State = state ?? throw new ArgumentNullException(nameof(state));
-        }
 
-        public static Store Instance 
-        {
-            get
+            if (initialState == null)
             {
-                if (StoreInstance == null) 
-                {
-                    return new DefaultStore(
-                        new List<IReducer>(),
-                        new State()
-                    );
-                }
-                return StoreInstance;
+                throw new ArgumentNullException(nameof(initialState));
             }
+            _stateHistory.Enqueue(initialState);
+            _previousState = initialState;
+
+            StateHistoryLimit = stateHistoryLimit;
         }
 
         public List<IReducer> Reducers { get; }
-        public State State { get; }
+        public int StateHistoryLimit { get; }
 
-        public static void Dispatch(State newState, string action)
+        public void Dispatch(Action action)
         {
-            StoreInstance.OnDispatch(newState, action);
+            _nextState = _previousState;
+            State newState = OnDispatch(action);
+
+            if (_nextState != _previousState)
+            {
+                addStateToHistory(newState);
+            }
+            _nextState = null;
         }
 
-        public abstract void OnDispatch(State newState, string action);
+        public abstract State OnDispatch(Action action);
+
+        protected void addStateToHistory(State state) 
+        {
+            if (_stateHistory.Count >= StateHistoryLimit) 
+            {
+                _stateHistory.Dequeue();
+            } 
+            _stateHistory.Enqueue(state);
+            _previousState = state;
+        }
     }
 }

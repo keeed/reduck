@@ -4,6 +4,6 @@ namespace Reduck
 {
     public interface IReducer
     {
-        State Reduce(State state, string action);
+        State Apply(State previousState, Action action);
     }
 }

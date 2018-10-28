@@ -9,12 +9,14 @@ namespace Reduck
         {
         }
 
-        public override void OnDispatch(State newState, string action)
+        public override State OnDispatch(Action action)
         {
             foreach (var reducer in Reducers)
             {
-                newState = reducer.Reduce(newState, action);       
+                _nextState = reducer.Apply(_nextState, action);       
             }
+            
+            return _nextState;
         }
     }
 }
